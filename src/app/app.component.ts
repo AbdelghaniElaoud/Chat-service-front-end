@@ -3,17 +3,17 @@ import { Component, OnInit } from '@angular/core';
 import { WebsocketService } from './services/websocket.service';
 import { MessageService } from './services/message.service';
 import {User} from './model/user.model';
+import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {NgForOf, NgIf} from '@angular/common';
-import {HttpClientModule} from '@angular/common/http';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   imports: [
-    FormsModule,
+    NgForOf,
     NgIf,
-    NgForOf
+    NgClass,
+    FormsModule
   ],
   styleUrls: ['./app.component.css']
 })
@@ -22,6 +22,8 @@ export class AppComponent implements OnInit {
   isConnected = false;
   contacts: User[] = [];
   selectedContact: User | null = null;
+  messages: any[] = [];
+  message: string = '';
 
   constructor(private websocketService: WebsocketService, private messageService: MessageService) {}
 
@@ -41,10 +43,6 @@ export class AppComponent implements OnInit {
   loadContacts() {
     this.messageService.getContacts().subscribe((contacts: User[]) => {
       this.contacts = contacts;
-      console.log(contacts)
-      if (this.contacts.length === 0) {
-        console.log('No users found');
-      }
     }, error => {
       console.error('Error fetching contacts:', error);
     });
@@ -52,13 +50,34 @@ export class AppComponent implements OnInit {
 
   selectContact(contact: User) {
     this.selectedContact = contact;
-    // Load messages with the selected contact
-    // this.loadMessagesBetweenUsers(this.username, contact.username);
+    this.loadMessagesBetweenUsers(this.username, contact.username);
   }
 
-  // loadMessagesBetweenUsers(username1: string, username2: string) {
-  //   this.messageService.loadMessagesBetweenUsers(username1, username2).subscribe((messages: any[]) => {
-  //     // Handle loading messages
-  //   });
-  // }
+  loadMessagesBetweenUsers(username1: string, username2: string) {
+    const userId1 = this.contacts.find(user => user.username === username1)?.id;
+    const userId2 = this.contacts.find(user => user.username === username2)?.id;
+    if (userId1 !== undefined && userId2 !== undefined) {
+      this.messageService.loadMessagesBetweenUsers(userId1, userId2).subscribe((messages: any[]) => {
+        this.messages = messages;
+      }, error => {
+        console.error('Error loading messages:', error);
+      });
+    }
+  }
+
+  sendMessage() {
+    if (this.selectedContact && this.message) {
+      this.websocketService.sendMessage(this.username, this.message, this.selectedContact.username);
+      this.message = '';
+    }
+  }
+
+  getAvatarColor(sender: string): string {
+    const colors = ['#2196F3', '#32c787', '#00BCD4', '#ff5652', '#ffc107', '#ff85af', '#FF9800', '#39bbb0'];
+    let hash = 0;
+    for (let i = 0; i < sender?.length; i++) {
+      hash = 31 * hash + sender.charCodeAt(i);
+    }
+    return colors[Math.abs(hash % colors.length)];
+  }
 }
