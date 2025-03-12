@@ -1,75 +1,64 @@
-import {Component, OnInit} from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import {WebsocketService} from './services/websocket.service';
-import {NgClass, NgForOf, NgIf} from '@angular/common';
+// src/app/app.component.ts
+import { Component, OnInit } from '@angular/core';
+import { WebsocketService } from './services/websocket.service';
+import { MessageService } from './services/message.service';
+import {User} from './model/user.model';
 import {FormsModule} from '@angular/forms';
-import {MessageService} from './services/message.service';
+import {NgForOf, NgIf} from '@angular/common';
+import {HttpClientModule} from '@angular/common/http';
 
 @Component({
   selector: 'app-root',
-  imports: [/*RouterOutlet,*/ NgClass, NgForOf, FormsModule, NgIf],
-  providers: [MessageService],
-  standalone : true,
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  imports: [
+    FormsModule,
+    NgIf,
+    NgForOf
+  ],
+  styleUrls: ['./app.component.css']
 })
-export class  AppComponent implements OnInit{
-  username: string = '';  // Stores the username entered by the user
-  message: string = '';  // Stores the message being typed by the user
-  messages: any[] = [];  // Stores all the chat messages
-  isConnected = false;  // Tracks whether the user is connected to the WebSocket
-  connectingMessage = 'Connecting...';  // Message to show while connecting
+export class AppComponent implements OnInit {
+  username: string = '';
+  isConnected = false;
+  contacts: User[] = [];
+  selectedContact: User | null = null;
 
-  constructor( private websocketService: WebsocketService){
-    console.log('AppComponent constructor called');
-  }
+  constructor(private websocketService: WebsocketService, private messageService: MessageService) {}
 
   ngOnInit(): void {
-    console.log('AppComponent ngOnInit called');
-
-    // Subscribe to messages observable to receive messages from the WebSocket service
-    this.websocketService.messages$.subscribe(message => {
-      if (message?.type) {
-        console.log(message, "hhhhhhhs")
-        this.messages.push(message);
-      }
-    });
-
-    // Subscribe to connection status observable to monitor connection status
     this.websocketService.connectionStatus$.subscribe(connected => {
-      this.isConnected = connected;  // Update the connection status
+      this.isConnected = connected;
       if (connected) {
-        this.connectingMessage = '';  // Clear the connecting message once connected
-        console.log('WebSocket connection established');
+        this.loadContacts();
       }
     });
-
   }
 
-  connect(){
-    console.log('Attempting to connect to WebSocket at http://localhost:8080/ws with username:', this.username);
-    this.websocketService.connect(this.username);  // Call the WebSocket service to connect
+  connect() {
+    this.websocketService.connect(this.username);
   }
 
-  sendMessage(){
-    if (this.message) {
-      this.websocketService.sendMessage(this.username, this.message);  // Send the message via WebSocket service
-      this.message = '';  // Clear the message input after sending
-    }
+  loadContacts() {
+    this.messageService.getContacts().subscribe((contacts: User[]) => {
+      this.contacts = contacts;
+      console.log(contacts)
+      if (this.contacts.length === 0) {
+        console.log('No users found');
+      }
+    }, error => {
+      console.error('Error fetching contacts:', error);
+    });
   }
 
-
-  getAvatarColor(sender:string):string{
-
-    // Array of colors to choose from
-    const colors = ['#2196F3', '#32c787', '#00BCD4', '#ff5652', '#ffc107', '#ff85af', '#FF9800', '#39bbb0'];
-    let hash = 0;
-    for (let i = 0; i < sender?.length; i++) {
-      // Generate a hash from the sender's name
-      hash = 31 * hash + sender.charCodeAt(i);  // Create a hash based on the username
-    }
-    // Return a color from the array based on the hash value
-    return colors[Math.abs(hash % colors.length)];
+  selectContact(contact: User) {
+    this.selectedContact = contact;
+    // Load messages with the selected contact
+    // this.loadMessagesBetweenUsers(this.username, contact.username);
   }
 
+  // loadMessagesBetweenUsers(username1: string, username2: string) {
+  //   this.messageService.loadMessagesBetweenUsers(username1, username2).subscribe((messages: any[]) => {
+  //     // Handle loading messages
+  //   });
+  // }
 }
