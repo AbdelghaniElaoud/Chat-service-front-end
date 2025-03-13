@@ -1,18 +1,20 @@
-// src/app/services/websocket.service.ts
 import { Injectable } from '@angular/core';
 import { Client, Message } from '@stomp/stompjs';
 import { BehaviorSubject } from 'rxjs';
 import SockJS from 'sockjs-client';
+import {User} from '../model/user.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WebsocketService {
   stompClient: Client | null = null;
-  private messageSubject = new BehaviorSubject<any>(null);
+  private messageSubject = new BehaviorSubject<any>("default value");
   public messages$ = this.messageSubject.asObservable();
   private connectionSubject = new BehaviorSubject<boolean>(false);
   public connectionStatus$ = this.connectionSubject.asObservable();
+  public sender : User | undefined ;
+  public recipient : User | undefined ;
 
   connect(username: string) {
     const socket = new SockJS('http://localhost:8080/ws');
@@ -27,7 +29,9 @@ export class WebsocketService {
       this.connectionSubject.next(true);
 
       this.stompClient?.subscribe('/user/queue/messages', (message: Message) => {
-        this.messageSubject.next(JSON.parse(message.body));
+        const receivedMessage = JSON.parse(message.body);
+        console.log('Received message:', receivedMessage);
+        this.messageSubject.next(receivedMessage); // Update the messageSubject
       });
 
       this.stompClient?.publish({
@@ -51,8 +55,16 @@ export class WebsocketService {
       console.log(`Message sent by ${username}: ${content}`);
       this.stompClient.publish({
         destination: '/app/chat.sendMessage',
-        headers: { 'recipientUsername': recipient }, // Set the recipient in the header
+        headers: { 'recipientUsername': recipient },
         body: JSON.stringify(chatMessage)
+      });
+      this.sender = new User(0, username);
+      this.recipient = new User(0, recipient);
+      this.messageSubject.next({
+        content: content,
+        sender: this.sender,
+        recipient: this.recipient,
+        type: "CHAT"
       });
     } else {
       console.error('WebSocket is not connected. Unable to send message.');

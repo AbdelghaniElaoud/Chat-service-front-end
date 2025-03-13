@@ -25,13 +25,26 @@ export class AppComponent implements OnInit {
   messages: any[] = [];
   message: string = '';
 
-  constructor(private websocketService: WebsocketService, private messageService: MessageService) {}
+  constructor(
+    private websocketService: WebsocketService,
+    private messageService: MessageService
+  ) {}
 
   ngOnInit(): void {
     this.websocketService.connectionStatus$.subscribe(connected => {
       this.isConnected = connected;
       if (connected) {
         this.loadContacts();
+      }
+    });
+
+    this.websocketService.messages$.subscribe(message => {
+      if (message) {
+        // Log and add the received message to the array of messages
+        console.log(`Message received from ${message.sender}: ${message.content}`);
+        console.log(this.messages)
+        this.messages.push(message)
+        //console.log("Messages : ", JSON.stringify(this.messages, null, 2));
       }
     });
   }
