@@ -23,6 +23,7 @@ export class AppComponent implements OnInit {
   contacts: User[] = [];
   selectedContact: User | null = null;
   messages: any[] = [];
+  messagesForSocket: any[] = [];
   message: string = '';
 
   constructor(
@@ -38,15 +39,7 @@ export class AppComponent implements OnInit {
       }
     });
 
-    this.websocketService.messages$.subscribe(message => {
-      if (message) {
-        // Log and add the received message to the array of messages
-        console.log(`Message received from ${message.sender}: ${message.content}`);
-        console.log(this.messages)
-        this.messages.push(message)
-        //console.log("Messages : ", JSON.stringify(this.messages, null, 2));
-      }
-    });
+
   }
 
   connect() {
@@ -79,6 +72,17 @@ export class AppComponent implements OnInit {
         console.error('Error loading messages:', error);
       });
     }
+
+    this.websocketService.messages$.subscribe(message => {
+      if (message) {
+        // Log and add the received message to the array of messages
+        console.log(`Message received from ${message.body.sender}: ${message.body.content}`);
+        console.log(JSON.stringify(message.sender, null, 2));
+        console.log(this.messages)
+        this.messagesForSocket.push(message)
+        //console.log("Messages : ", JSON.stringify(this.messages, null, 2));
+      }
+    });
   }
 
   sendMessage() {

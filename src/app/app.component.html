@@ -16,6 +16,7 @@
 <div *ngIf="isConnected" id="chatroom">
   <div class="chat-container">
     <div class="chat-header">
+      <h1>{{this.username}}</h1>
       <h2>Select a user to chat with</h2>
     </div>
     <div *ngIf="contacts.length > 0" class="contacts">
@@ -35,6 +36,12 @@
           <i *ngIf="message.type === 'CHAT'" [style.backgroundColor]="getAvatarColor(message.sender?.username)">{{ message.sender?.username?.charAt(0) }}</i>
           <span *ngIf="message.type === 'CHAT'">{{ message.sender?.username }}</span>
           <p>{{ message.content }}</p>
+        </li>
+
+        <li *ngFor="let message of messagesForSocket" [ngClass]="{'event-message': message.body.type !== 'CHAT', 'chat-message': message.body.type === 'CHAT'}">
+          <i *ngIf="message.body.type === 'CHAT'" [style.backgroundColor]="getAvatarColor(message.body.sender)">{{ message.body.sender.charAt(0) }}</i>
+          <span *ngIf="message.body.type === 'CHAT'">{{ message.body.sender }}</span>
+          <p>{{ message.body.content }}</p>
         </li>
       </ul>
       <form (ngSubmit)="sendMessage()" id="typingArea">

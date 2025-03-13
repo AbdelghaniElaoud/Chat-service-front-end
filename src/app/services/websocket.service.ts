@@ -28,7 +28,7 @@ export class WebsocketService {
       console.log('Connected to WebSocket server');
       this.connectionSubject.next(true);
 
-      this.stompClient?.subscribe('/user/queue/messages', (message: Message) => {
+      this.stompClient?.subscribe('/topic/public', (message: Message) => {
         const receivedMessage = JSON.parse(message.body);
         console.log('Received message:', receivedMessage);
         this.messageSubject.next(receivedMessage); // Update the messageSubject
@@ -58,14 +58,14 @@ export class WebsocketService {
         headers: { 'recipientUsername': recipient },
         body: JSON.stringify(chatMessage)
       });
-      this.sender = new User(0, username);
-      this.recipient = new User(0, recipient);
-      this.messageSubject.next({
-        content: content,
-        sender: this.sender,
-        recipient: this.recipient,
-        type: "CHAT"
-      });
+      // this.sender = new User(0, username);
+      // this.recipient = new User(0, recipient);
+      // this.messageSubject.next({
+      //   content: content,
+      //   sender: this.sender,
+      //   recipient: this.recipient,
+      //   type: "CHAT"
+      // });
     } else {
       console.error('WebSocket is not connected. Unable to send message.');
     }
