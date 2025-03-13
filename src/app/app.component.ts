@@ -37,7 +37,9 @@ export class AppComponent implements OnInit {
   }
 
   connect() {
-    this.websocketService.connect(this.username);
+    if (this.validateName()){
+      this.websocketService.connect(this.username);
+    }
   }
 
   loadContacts() {
@@ -59,6 +61,7 @@ export class AppComponent implements OnInit {
     if (userId1 !== undefined && userId2 !== undefined) {
       this.messageService.loadMessagesBetweenUsers(userId1, userId2).subscribe((messages: any[]) => {
         this.messages = messages;
+        console.log("Messages : ", JSON.stringify(this.messages, null, 2));
       }, error => {
         console.error('Error loading messages:', error);
       });
@@ -80,4 +83,26 @@ export class AppComponent implements OnInit {
     }
     return colors[Math.abs(hash % colors.length)];
   }
+
+   validateName(): boolean {
+    const nameElement = document.getElementById("name") as HTMLInputElement;
+    const name = nameElement.value;
+
+    // Check if the name is empty or contains only whitespace
+    if (!name.trim()) {
+      alert("Name cannot be empty.");
+      return false;
+    }
+
+    // Check if the name contains only letters and spaces
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(name)) {
+      alert("Name must contain only letters and spaces.");
+      return false;
+    }
+
+    return true;
+  }
+
+  protected readonly onsubmit = onsubmit;
 }
