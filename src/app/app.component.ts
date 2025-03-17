@@ -1,10 +1,9 @@
-// src/app/app.component.ts
-import { Component, OnInit } from '@angular/core';
-import { WebsocketService } from './services/websocket.service';
-import { MessageService } from './services/message.service';
+import {Component, OnInit} from '@angular/core';
 import {User} from './model/user.model';
-import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {FormsModule} from '@angular/forms';
+import {NgClass, NgForOf, NgIf} from '@angular/common';
+import {WebsocketService} from './services/websocket.service';
+import {MessageService} from './services/message.service';
 
 @Component({
   selector: 'app-root',
@@ -25,6 +24,7 @@ export class AppComponent implements OnInit {
   messages: any[] = [];
   messagesForSocket: any[] = [];
   message: string = '';
+  id: any = 0;
 
   constructor(
     private websocketService: WebsocketService,
@@ -39,11 +39,17 @@ export class AppComponent implements OnInit {
       }
     });
 
-
+    this.websocketService.messages$.subscribe(message => {
+      if (message) {
+        this.id = message.sender.id;
+         console.log(`Message received from ${message.sender.username}`);
+        this.messagesForSocket.push(message);
+      }
+    });
   }
 
   connect() {
-    if (this.validateName()){
+    if (this.validateName()) {
       this.websocketService.connect(this.username);
     }
   }
@@ -67,27 +73,27 @@ export class AppComponent implements OnInit {
     if (userId1 !== undefined && userId2 !== undefined) {
       this.messageService.loadMessagesBetweenUsers(userId1, userId2).subscribe((messages: any[]) => {
         this.messages = messages;
-        console.log("Messages : ", JSON.stringify(this.messages, null, 2));
       }, error => {
         console.error('Error loading messages:', error);
       });
     }
-
-    this.websocketService.messages$.subscribe(message => {
-      if (message) {
-        // Log and add the received message to the array of messages
-        console.log(`Message received from ${message.body.sender}: ${message.body.content}`);
-        console.log(JSON.stringify(message.sender, null, 2));
-        console.log(this.messages)
-        this.messagesForSocket.push(message)
-        //console.log("Messages : ", JSON.stringify(this.messages, null, 2));
-      }
-    });
   }
 
   sendMessage() {
     if (this.selectedContact && this.message) {
       this.websocketService.sendMessage(this.username, this.message, this.selectedContact.username);
+      const sender = {
+        id : this.id,
+        username: this.username
+      }
+      const sentMessage = {
+        sender: sender,
+        content: this.message,
+        type: 'CHAT',
+        recipient: this.selectedContact.username
+      };
+      console.log("This is the message that you have sent : " + sentMessage.sender)
+      this.messagesForSocket.push(sentMessage)
       this.message = '';
     }
   }
@@ -101,17 +107,15 @@ export class AppComponent implements OnInit {
     return colors[Math.abs(hash % colors.length)];
   }
 
-   validateName(): boolean {
+  validateName(): boolean {
     const nameElement = document.getElementById("name") as HTMLInputElement;
     const name = nameElement.value;
 
-    // Check if the name is empty or contains only whitespace
     if (!name.trim()) {
       alert("Name cannot be empty.");
       return false;
     }
 
-    // Check if the name contains only letters and spaces
     const nameRegex = /^[a-zA-Z\s]+$/;
     if (!nameRegex.test(name)) {
       alert("Name must contain only letters and spaces.");
@@ -120,6 +124,4 @@ export class AppComponent implements OnInit {
 
     return true;
   }
-
-  protected readonly onsubmit = onsubmit;
 }

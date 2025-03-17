@@ -1,8 +1,7 @@
-import { Injectable } from '@angular/core';
-import { Client, Message } from '@stomp/stompjs';
-import { BehaviorSubject } from 'rxjs';
+import {Client, Message} from '@stomp/stompjs';
+import {BehaviorSubject} from 'rxjs';
+import {Injectable} from '@angular/core';
 import SockJS from 'sockjs-client';
-import {User} from '../model/user.model';
 
 @Injectable({
   providedIn: 'root'
@@ -13,8 +12,6 @@ export class WebsocketService {
   public messages$ = this.messageSubject.asObservable();
   private connectionSubject = new BehaviorSubject<boolean>(false);
   public connectionStatus$ = this.connectionSubject.asObservable();
-  public sender : User | undefined ;
-  public recipient : User | undefined ;
 
   connect(username: string) {
     const socket = new SockJS('http://localhost:8080/ws');
@@ -28,9 +25,10 @@ export class WebsocketService {
       console.log('Connected to WebSocket server');
       this.connectionSubject.next(true);
 
-      this.stompClient?.subscribe('/topic/public', (message: Message) => {
+      const privateDestination = `/user/${username}/messages`;
+      this.stompClient?.subscribe(privateDestination, (message: Message) => {
         const receivedMessage = JSON.parse(message.body);
-        console.log('Received message:', receivedMessage);
+        console.log('Received private message:', receivedMessage);
         this.messageSubject.next(receivedMessage); // Update the messageSubject
       });
 
@@ -49,7 +47,6 @@ export class WebsocketService {
   }
 
   sendMessage(username: string, content: string, recipient: string) {
-    console.log("The recipient is : " + recipient)
     if (this.stompClient && this.stompClient.connected) {
       const chatMessage = { sender: username, content: content, type: 'CHAT', recipient: recipient };
       console.log(`Message sent by ${username}: ${content}`);
@@ -58,14 +55,6 @@ export class WebsocketService {
         headers: { 'recipientUsername': recipient },
         body: JSON.stringify(chatMessage)
       });
-      // this.sender = new User(0, username);
-      // this.recipient = new User(0, recipient);
-      // this.messageSubject.next({
-      //   content: content,
-      //   sender: this.sender,
-      //   recipient: this.recipient,
-      //   type: "CHAT"
-      // });
     } else {
       console.error('WebSocket is not connected. Unable to send message.');
     }
