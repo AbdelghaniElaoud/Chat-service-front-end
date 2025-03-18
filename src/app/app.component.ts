@@ -7,7 +7,7 @@ import { NgClass, NgForOf, NgIf } from '@angular/common';
 import { WebsocketService } from './services/websocket.service';
 import { MessageService } from './services/message.service';
 import { ConversationService } from './services/conversation.service';
-import {UserService} from './services/user.service';
+import { UserService } from './services/user.service';
 
 @Component({
   selector: 'app-root',
@@ -62,13 +62,18 @@ export class AppComponent implements OnInit {
     if (this.validateName()) {
       this.websocketService.connect(this.username);
       this.userService.getUser(this.username).subscribe(
-        data => {
-          this.connectedUser = data;
+        user => {
+          if (user) {
+            this.connectedUser = user;
+            console.log('------', user);
+          }
+        },
+        error => {
+          console.error('Error fetching user:', error);
         }
-      )
+      );
     }
-    console.log('********',this.connectedUser)
-    
+    console.log('********', this.connectedUser);
   }
 
   loadConversations() {
@@ -107,23 +112,6 @@ export class AppComponent implements OnInit {
         this.selectedConversationId.toString(),
         this.selectedRecipientId
       );
-      // const message = {
-      //   content : this.message,
-      //   type: 'CHAT',
-      //   sender: {
-      //     username: this.username,
-      //   },
-      //   recipient : {
-      //     username: 'Hola',
-      //   },
-      //   conversation
-      //
-      //   this.username,
-      //   this.message,
-      //   this.selectedConversationId.toString(),
-      //   this.selectedRecipientId
-      // }
-      // this.messageService.createMessage()
       const sender = {
         id: this.id,
         username: this.username
@@ -148,7 +136,7 @@ export class AppComponent implements OnInit {
       hash = 31 * hash + sender.charCodeAt(i);
     }
     return colors[Math.abs(hash % colors.length)];
-  }
+    5 }
 
   validateName(): boolean {
     const nameElement = document.getElementById("name") as HTMLInputElement;
