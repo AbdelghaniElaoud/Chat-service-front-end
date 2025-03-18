@@ -1,17 +1,23 @@
-import {Client, Message} from '@stomp/stompjs';
-import {BehaviorSubject} from 'rxjs';
-import {Injectable} from '@angular/core';
+import { Injectable } from '@angular/core';
+import { Client, Message } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { BehaviorSubject } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { map } from 'rxjs';
+import { Conversation } from '../model/conversation.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WebsocketService {
-  stompClient: Client | null = null;
+  private stompClient: Client | null = null;
   private messageSubject = new BehaviorSubject<any>("default value");
   public messages$ = this.messageSubject.asObservable();
   private connectionSubject = new BehaviorSubject<boolean>(false);
   public connectionStatus$ = this.connectionSubject.asObservable();
+  public conversations: any[] | undefined;
+
+  constructor(private http: HttpClient) {}
 
   connect(username: string) {
     const socket = new SockJS('http://localhost:8080/ws');
@@ -46,13 +52,24 @@ export class WebsocketService {
     this.stompClient?.activate();
   }
 
-  sendMessage(username: string, content: string, recipient: string) {
+  loadConversations(username: string): void {
+    this.http.get<Conversation[]>(`http://localhost:8080/api/conversations/${username}/conversations`)
+      .pipe(map((conversations => conversations)))
+      .subscribe(
+        conversations => {
+          this.conversations = conversations;
+        },
+        error => console.error('Error loading conversations:', error)
+      );
+  }
+
+  sendMessage(username: string, content: string, recipient: string, conversationId: any) {
     if (this.stompClient && this.stompClient.connected) {
       const chatMessage = { sender: username, content: content, type: 'CHAT', recipient: recipient };
       console.log(`Message sent by ${username}: ${content}`);
       this.stompClient.publish({
-        destination: '/app/chat.sendMessage',
-        headers: { 'recipientUsername': recipient },
+        destination: `/app/chat.sendMessage`,
+        headers: { 'conversationId': conversationId },
         body: JSON.stringify(chatMessage)
       });
     } else {

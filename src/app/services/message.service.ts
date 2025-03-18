@@ -1,27 +1,26 @@
-// src/app/services/message.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import {User} from '../model/user.model';
+import { Message } from '../model/message.model';
+import { User } from '../model/user.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MessageService {
-  private apiUrl = 'http://localhost:8080/api';
-  private apiUrl1 = 'http://localhost:8080/api/messages';
-
-  getContacts(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}/users`);
-  }
+  private apiUrl = 'http://localhost:8080/api/messages';
 
   constructor(private http: HttpClient) {}
 
-  /*getContacts(): Observable<User[]> {
+  getContacts(): Observable<User[]> {
     return this.http.get<User[]>(`${this.apiUrl}/contacts`);
-  }*/
+  }
 
-  loadMessagesBetweenUsers(user1Id: number, user2Id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl1}/${user1Id}/${user2Id}`);
+  loadMessagesByConversationId(conversationId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/conversation/${conversationId}`);
+  }
+
+  createMessage(message: Message): Observable<Message> {
+    return this.http.post<Message>(this.apiUrl, message);
   }
 }

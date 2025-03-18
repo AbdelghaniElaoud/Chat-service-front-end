@@ -1,9 +1,13 @@
-import {Component, OnInit} from '@angular/core';
-import {User} from './model/user.model';
-import {FormsModule} from '@angular/forms';
-import {NgClass, NgForOf, NgIf} from '@angular/common';
-import {WebsocketService} from './services/websocket.service';
-import {MessageService} from './services/message.service';
+import { Component, OnInit } from '@angular/core';
+import { User } from './model/user.model';
+import { Conversation } from './model/conversation.model';
+import { Message } from './model/message.model';
+import { FormsModule } from '@angular/forms';
+import { NgClass, NgForOf, NgIf } from '@angular/common';
+import { WebsocketService } from './services/websocket.service';
+import { MessageService } from './services/message.service';
+import { ConversationService } from './services/conversation.service';
+import {UserService} from './services/user.service';
 
 @Component({
   selector: 'app-root',
@@ -18,31 +22,37 @@ import {MessageService} from './services/message.service';
 })
 export class AppComponent implements OnInit {
   username: string = '';
+  connectedUser: User | undefined;
   isConnected = false;
   contacts: User[] = [];
+  selectedRecipientId: number | null = null;
   selectedContact: User | null = null;
-  messages: any[] = [];
+  selectedConversationId: number | null = null; // Add this field to hold the selected conversation ID
+  messages: Message[] = [];
   messagesForSocket: any[] = [];
   message: string = '';
   id: any = 0;
+  conversations: Conversation[] = [];
 
   constructor(
     private websocketService: WebsocketService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private conversationService: ConversationService,
+    private userService: UserService,
   ) {}
 
   ngOnInit(): void {
     this.websocketService.connectionStatus$.subscribe(connected => {
       this.isConnected = connected;
       if (connected) {
-        this.loadContacts();
+        this.loadConversations();
       }
     });
 
     this.websocketService.messages$.subscribe(message => {
       if (message) {
         this.id = message.sender.id;
-         console.log(`Message received from ${message.sender.username}`);
+        console.log(`Message received from ${message.sender.username}`);
         this.messagesForSocket.push(message);
       }
     });
@@ -51,55 +61,88 @@ export class AppComponent implements OnInit {
   connect() {
     if (this.validateName()) {
       this.websocketService.connect(this.username);
+      this.userService.getUser(this.username).subscribe(
+        data => {
+          this.connectedUser = data;
+        }
+      )
     }
+    console.log('********',this.connectedUser)
+    
   }
 
-  loadContacts() {
-    this.messageService.getContacts().subscribe((contacts: User[]) => {
-      this.contacts = contacts;
-    }, error => {
-      console.error('Error fetching contacts:', error);
-    });
+  loadConversations() {
+    this.conversationService.getConversationsForUser(this.username).subscribe(
+      (conversations: Conversation[]) => {
+        this.conversations = conversations;
+      },
+      error => {
+        console.error('Error fetching conversations:', error);
+      }
+    );
   }
 
-  selectContact(contact: User) {
-    this.selectedContact = contact;
-    this.loadMessagesBetweenUsers(this.username, contact.username);
+  selectConversation(conversation: Conversation) {
+    this.selectedConversationId = conversation.id;
+    this.selectedRecipientId = conversation.receiver.id;
+    this.loadMessagesForConversation(conversation.id);
   }
 
-  loadMessagesBetweenUsers(username1: string, username2: string) {
-    const userId1 = this.contacts.find(user => user.username === username1)?.id;
-    const userId2 = this.contacts.find(user => user.username === username2)?.id;
-    if (userId1 !== undefined && userId2 !== undefined) {
-      this.messageService.loadMessagesBetweenUsers(userId1, userId2).subscribe((messages: any[]) => {
+  loadMessagesForConversation(conversationId: number) {
+    this.conversationService.loadMessagesByConversationId(conversationId).subscribe(
+      (messages: Message[]) => {
         this.messages = messages;
-      }, error => {
+      },
+      error => {
         console.error('Error loading messages:', error);
-      });
-    }
+      }
+    );
   }
 
   sendMessage() {
-    if (this.selectedContact && this.message) {
-      this.websocketService.sendMessage(this.username, this.message, this.selectedContact.username);
+    if (this.selectedConversationId && this.selectedRecipientId && this.message) {
+      this.websocketService.sendMessage(
+        this.username,
+        this.message,
+        this.selectedConversationId.toString(),
+        this.selectedRecipientId
+      );
+      // const message = {
+      //   content : this.message,
+      //   type: 'CHAT',
+      //   sender: {
+      //     username: this.username,
+      //   },
+      //   recipient : {
+      //     username: 'Hola',
+      //   },
+      //   conversation
+      //
+      //   this.username,
+      //   this.message,
+      //   this.selectedConversationId.toString(),
+      //   this.selectedRecipientId
+      // }
+      // this.messageService.createMessage()
       const sender = {
-        id : this.id,
+        id: this.id,
         username: this.username
-      }
+      };
       const sentMessage = {
         sender: sender,
         content: this.message,
         type: 'CHAT',
-        recipient: this.selectedContact.username
+        conversationId: this.selectedConversationId,
+        recipientId: this.selectedRecipientId
       };
-      console.log("This is the message that you have sent : " + sentMessage.sender)
-      this.messagesForSocket.push(sentMessage)
+      console.log(`This is the message that you have sent : ` + sentMessage.sender);
+      this.messagesForSocket.push(sentMessage);
       this.message = '';
     }
   }
 
   getAvatarColor(sender: string): string {
-    const colors = ['#2196F3', '#32c787', '#00BCD4', '#ff5652', '#ffc107', '#ff85af', '#FF9800', '#39bbb0'];
+    const colors = ['#2196F3', '#32c787', '#00BCD4', '#ff5652', '#ffc107', '#ff85af', '#FF9800'];
     let hash = 0;
     for (let i = 0; i < sender?.length; i++) {
       hash = 31 * hash + sender.charCodeAt(i);

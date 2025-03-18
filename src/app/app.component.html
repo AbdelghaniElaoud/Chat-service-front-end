@@ -17,24 +17,24 @@
   <div class="chat-container">
     <div class="chat-header">
       <h1>{{this.username}}</h1>
-      <h2>Select a user to chat with</h2>
+      <h2>Select a conversation to chat</h2>
     </div>
-    <div *ngIf="contacts.length > 0" class="contacts">
+    <div *ngIf="conversations.length > 0" class="conversations">
       <ul>
-        <li *ngFor="let contact of contacts" (click)="selectContact(contact)">
-          {{ contact.username }}
+        <li *ngFor="let conversation of conversations" (click)="selectConversation(conversation)">
+          {{ conversation.sender.username }} - {{ conversation.receiver.username }}
         </li>
       </ul>
     </div>
-    <div *ngIf="contacts.length === 0" class="no-contacts">
-      <p>No users available to chat with.</p>
+    <div *ngIf="conversations.length === 0" class="no-conversations">
+      <p>No conversations available.</p>
     </div>
-    <div *ngIf="selectedContact" class="chat-box">
-      <h3>Chat with {{ selectedContact.username }}</h3>
+    <div *ngIf="selectedConversationId" class="chat-box">
+      <h3>Conversation with {{ selectedContact?.username }}</h3>
       <ul id="messageArea">
         <li *ngFor="let message of messages" [ngClass]="{'event-message': message.type !== 'CHAT', 'chat-message': message.type === 'CHAT'}">
-          <i *ngIf="message.type === 'CHAT'" [style.backgroundColor]="getAvatarColor(message.sender?.username)">{{ message.sender?.username?.charAt(0) }}</i>
-          <span *ngIf="message.type === 'CHAT'">{{ message.sender?.username }}</span>
+          <i *ngIf="message.type === 'CHAT'" [style.backgroundColor]="getAvatarColor(message.sender.username)">{{ message.sender.username?.charAt(0) }}</i>
+          <span *ngIf="message.type === 'CHAT'">{{ message.sender.username }}</span>
           <p>{{ message.content }}</p>
         </li>
 
