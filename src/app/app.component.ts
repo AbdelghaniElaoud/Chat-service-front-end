@@ -8,6 +8,7 @@ import { WebsocketService } from './services/websocket.service';
 import { MessageService } from './services/message.service';
 import { ConversationService } from './services/conversation.service';
 import { UserService } from './services/user.service';
+import {Observable} from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -23,6 +24,7 @@ import { UserService } from './services/user.service';
 export class AppComponent implements OnInit {
   username: string = '';
   connectedUser: User | undefined;
+  recipient: User | undefined;
   isConnected = false;
   contacts: User[] = [];
   selectedRecipientId: number | null = null;
@@ -65,7 +67,6 @@ export class AppComponent implements OnInit {
         user => {
           if (user) {
             this.connectedUser = user;
-            console.log('------', user);
           }
         },
         error => {
@@ -73,7 +74,6 @@ export class AppComponent implements OnInit {
         }
       );
     }
-    console.log('********', this.connectedUser);
   }
 
   loadConversations() {
@@ -123,7 +123,25 @@ export class AppComponent implements OnInit {
         conversationId: this.selectedConversationId,
         recipientId: this.selectedRecipientId
       };
-      console.log(`This is the message that you have sent : ` + sentMessage.sender);
+
+      const messageToBeSaved = {
+        content: this.message,
+        type: 'CHAT',
+        conversationId: this.selectedConversationId,
+      }
+
+      console.log('Message to be saved ',messageToBeSaved)
+
+      this.messageService.createMessageWithMessageDTO(messageToBeSaved).subscribe(
+        (message: Message) => {
+          console.log("The message ", message)
+        },
+        error => {
+          console.error('Error saving the message to the database', error);
+        }
+      );
+
+      console.log(`This is the message that you have sent : ` + sentMessage.sender.username);
       this.messagesForSocket.push(sentMessage);
       this.message = '';
     }
