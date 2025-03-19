@@ -44,6 +44,8 @@ export class AppComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    //console.log("Messages that are coming from the database are " + )
+
     this.websocketService.connectionStatus$.subscribe(connected => {
       this.isConnected = connected;
       if (connected) {
@@ -53,9 +55,10 @@ export class AppComponent implements OnInit {
 
     this.websocketService.messages$.subscribe(message => {
       if (message) {
-        this.id = message.sender.id;
-        console.log(`Message received from ${message.sender.username}`);
+        //this.id = message.sender.id;
+        //console.log(`Message received from ${JSON.stringify(message)}`);
         this.messagesForSocket.push(message);
+        console.log("The websocket messages are : ", this.messagesForSocket)
       }
     });
   }
@@ -63,16 +66,7 @@ export class AppComponent implements OnInit {
   connect() {
     if (this.validateName()) {
       this.websocketService.connect(this.username);
-      this.userService.getUser(this.username).subscribe(
-        user => {
-          if (user) {
-            this.connectedUser = user;
-          }
-        },
-        error => {
-          console.error('Error fetching user:', error);
-        }
-      );
+
     }
   }
 
@@ -91,12 +85,18 @@ export class AppComponent implements OnInit {
     this.selectedConversation = conversation;
     this.selectedRecipientId = conversation.receiver.id;
     this.loadMessagesForConversation(conversation.id);
+
+    //Subscribe to the conversation channel
+    this.websocketService.changeSocket(conversation.id, this.username);
+
   }
 
   loadMessagesForConversation(conversationId: number) {
     this.conversationService.loadMessagesByConversationId(conversationId).subscribe(
       (messages: Message[]) => {
         this.messages = messages;
+
+        //console.log(`The messages from the database are ${JSON.stringify(messages)}`)
       },
       error => {
         console.error('Error loading messages:', error);
@@ -110,7 +110,8 @@ export class AppComponent implements OnInit {
         this.username,
         this.message,
         this.selectedRecipientId,
-        this.selectedConversation
+        this.selectedConversation,
+        `/user/${this.selectedConversation.id}/messages`
       );
       const sender = {
         id: this.id,
