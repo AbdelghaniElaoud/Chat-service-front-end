@@ -63,13 +63,13 @@ export class WebsocketService {
       );
   }
 
-  sendMessage(username: string, content: string, recipient: string, conversationId: any) {
+  sendMessage(username: string, content: string, recipient: number, conversation: any) {
     if (this.stompClient && this.stompClient.connected) {
-      const chatMessage = { sender: username, content: content, type: 'CHAT', recipient: recipient };
+      console.log("************", conversation)
+      const chatMessage = { sender: username, content: content, type: 'CHAT', recipient: recipient, conversation:conversation };
       console.log(`Message sent by ${username}: ${content}`);
       this.stompClient.publish({
         destination: `/app/chat.sendMessage`,
-        headers: { 'conversationId': conversationId },
         body: JSON.stringify(chatMessage)
       });
     } else {

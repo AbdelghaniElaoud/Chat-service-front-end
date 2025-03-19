@@ -29,11 +29,11 @@
     <div *ngIf="conversations.length === 0" class="no-conversations">
       <p>No conversations available.</p>
     </div>
-    <div *ngIf="selectedConversationId" class="chat-box">
+    <div *ngIf="selectedConversation" class="chat-box">
       <h3>Conversation with {{ selectedContact?.username }}</h3>
       <ul id="messageArea">
         <li *ngFor="let message of messages" [ngClass]="{'event-message': message.type !== 'CHAT', 'chat-message': message.type === 'CHAT'}">
-          <i *ngIf="message.type === 'CHAT'" [style.backgroundColor]="getAvatarColor(message.sender.username)">{{ message.sender.username?.charAt(0) }}</i>
+          <i *ngIf="message.type === 'CHAT'" [style.backgroundColor]="getAvatarColor(message.sender.username)">{{ message.sender.username }}</i>
           <span *ngIf="message.type === 'CHAT'">{{ message.sender.username }}</span>
           <p>{{ message.content }}</p>
         </li>

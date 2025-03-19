@@ -29,7 +29,7 @@ export class AppComponent implements OnInit {
   contacts: User[] = [];
   selectedRecipientId: number | null = null;
   selectedContact: User | null = null;
-  selectedConversationId: number | null = null; // Add this field to hold the selected conversation ID
+  selectedConversation: any = null; // Add this field to hold the selected conversation ID
   messages: Message[] = [];
   messagesForSocket: any[] = [];
   message: string = '';
@@ -88,7 +88,7 @@ export class AppComponent implements OnInit {
   }
 
   selectConversation(conversation: Conversation) {
-    this.selectedConversationId = conversation.id;
+    this.selectedConversation = conversation;
     this.selectedRecipientId = conversation.receiver.id;
     this.loadMessagesForConversation(conversation.id);
   }
@@ -105,12 +105,12 @@ export class AppComponent implements OnInit {
   }
 
   sendMessage() {
-    if (this.selectedConversationId && this.selectedRecipientId && this.message) {
+    if (this.selectedConversation && this.selectedRecipientId && this.message) {
       this.websocketService.sendMessage(
         this.username,
         this.message,
-        this.selectedConversationId.toString(),
-        this.selectedRecipientId
+        this.selectedRecipientId,
+        this.selectedConversation
       );
       const sender = {
         id: this.id,
@@ -120,14 +120,14 @@ export class AppComponent implements OnInit {
         sender: sender,
         content: this.message,
         type: 'CHAT',
-        conversationId: this.selectedConversationId,
+        conversation: this.selectedConversation,
         recipientId: this.selectedRecipientId
       };
 
       const messageToBeSaved = {
         content: this.message,
         type: 'CHAT',
-        conversationId: this.selectedConversationId,
+        conversation: this.selectedConversation,
       }
 
       console.log('Message to be saved ',messageToBeSaved)
